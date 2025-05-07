@@ -25,26 +25,7 @@ Um sistema web simples para cadastro e gestão de produtos, desenvolvido com PHP
 2. Importe o arquivo `database.sql` para o seu servidor MySQL
 3. Configure as credenciais do banco de dados no arquivo `config/database.php`
 4. Acesse o sistema pelo navegador
-
-## Estrutura do Projeto
-
-\`\`\`
-sistema-gestao-produtos/
-├── api/
-│ └── products.php
-├── config/
-│ └── database.php
-├── js/
-│ └── products.js
-├── database.sql
-├── index.php
-├── login.php
-├── logout.php
-├── register.php
-├── change-password.php
-└── README.md
-\`\`\`
-
+   
 ## Credenciais de Acesso
 
 - Usuário: admin
