@@ -74,7 +74,7 @@ Usuários autenticados podem alterar suas senhas através da página de alteraç
 - Se a nova senha tem pelo menos 6 caracteres
 - Se as novas senhas digitadas coincidem
 
-## Screenshots o Sistema
+## Screenshots do Sistema
 
 ![Login](https://github.com/user-attachments/assets/a0632d3a-fe9c-4df4-90b8-1e3e54de6dde)
 
