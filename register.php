@@ -12,6 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     require_once 'config/database.php';
     
     $username = trim($_POST['username']);
+    $email = trim($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     
@@ -26,6 +27,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->execute([$username]);
         if ($stmt->rowCount() > 0) {
             $errors[] = "Este nome de usuário já está em uso.";
+        }
+    }
+    
+    if (empty($email)) {
+        $errors[] = "E-mail é obrigatório.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = "Por favor, insira um e-mail válido.";
+    } else {
+        // Check if email already exists
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        if ($stmt->rowCount() > 0) {
+            $errors[] = "Este e-mail já está em uso.";
         }
     }
     
@@ -46,8 +60,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
             
             // Insert the new user
-            $stmt = $pdo->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-            $stmt->execute([$username, $hashed_password]);
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
+            $stmt->execute([$username, $email, $hashed_password]);
             
             // Set success message
             $success = "Conta criada com sucesso! Agora você pode fazer login.";
@@ -106,6 +120,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <label for="username" class="form-label">Nome de Usuário</label>
                                 <input type="text" class="form-control" id="username" name="username" 
                                        value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">E-mail</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
                             </div>
                             <div class="mb-3">
                                 <label for="password" class="form-label">Senha</label>

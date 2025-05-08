@@ -43,7 +43,7 @@ if (!isset($_SESSION['user_id'])) {
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Gestão de Produtos</h1>
+            <h1>Meus Produtos</h1>
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProductModal">
                 <i class="bi bi-plus-circle"></i> Novo Produto
             </button>
@@ -56,7 +56,8 @@ if (!isset($_SESSION['user_id'])) {
                 <form id="filterForm" class="row g-3">
                     <div class="col-md-4">
                         <label for="filterName" class="form-label">Nome</label>
-                        <input type="text" class="form-control" id="filterName">
+                        <input type="text" class="form-control" id="filterName" placeholder="Digite para buscar...">
+                        <small class="text-muted">A busca é realizada automaticamente enquanto você digita</small>
                     </div>
                     <div class="col-md-4">
                         <label for="filterStatus" class="form-label">Status</label>
@@ -67,8 +68,7 @@ if (!isset($_SESSION['user_id'])) {
                         </select>
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary me-2">Filtrar</button>
-                        <button type="button" id="clearFilters" class="btn btn-secondary">Limpar</button>
+                        <button type="button" id="clearFilters" class="btn btn-secondary">Limpar Filtros</button>
                     </div>
                 </form>
             </div>

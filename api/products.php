@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 
 header('Content-Type: application/json');
 
-// Get products with pagination and filtering
+// Modificar a consulta GET para filtrar produtos por usuário
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -19,16 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $offset = ($page - 1) * $limit;
         
         // Build query with filters
-        $params = [];
-        $whereClause = "";
+        $params = [$_SESSION['user_id']]; // Adicionar user_id como primeiro parâmetro
+        $whereClause = "WHERE user_id = ?"; // Filtrar por usuário atual
         
         if (isset($_GET['name']) && !empty($_GET['name'])) {
-            $whereClause .= (empty($whereClause) ? "WHERE " : " AND ") . "name LIKE ?";
+            $whereClause .= " AND name LIKE ?";
             $params[] = '%' . $_GET['name'] . '%';
         }
         
         if (isset($_GET['status']) && $_GET['status'] !== '') {
-            $whereClause .= (empty($whereClause) ? "WHERE " : " AND ") . "status = ?";
+            $whereClause .= " AND status = ?";
             $params[] = $_GET['status'];
         }
         
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 }
 
-// Create new product
+// Modificar a criação de produtos para associar ao usuário atual
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -76,9 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         
-        // Check if code already exists
-        $checkStmt = $pdo->prepare("SELECT id FROM products WHERE code = ?");
-        $checkStmt->execute([$data['code']]);
+        // Check if code already exists for this user
+        $checkStmt = $pdo->prepare("SELECT id FROM products WHERE code = ? AND user_id = ?");
+        $checkStmt->execute([$data['code'], $_SESSION['user_id']]);
         if ($checkStmt->rowCount() > 0) {
             http_response_code(400);
             echo json_encode(['error' => 'Código do produto já existe']);
@@ -91,14 +91,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = isset($data['status']) ? $data['status'] : 1;
         $description = isset($data['description']) ? $data['description'] : '';
         
-        $stmt = $pdo->prepare("INSERT INTO products (code, name, description, price, quantity, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO products (code, name, description, price, quantity, status, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['code'],
             $data['name'],
             $description,
             $price,
             $quantity,
-            $status
+            $status,
+            $_SESSION['user_id'] // Associar ao usuário atual
         ]);
         
         $productId = $pdo->lastInsertId();
@@ -115,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Update product
+// Modificar a atualização de produtos para verificar propriedade
 if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -133,29 +134,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             exit;
         }
         
-        // Get current product data
-        $getStmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-        $getStmt->execute([$data['id']]);
+        // Get current product data and verify ownership
+        $getStmt = $pdo->prepare("SELECT * FROM products WHERE id = ? AND user_id = ?");
+        $getStmt->execute([$data['id'], $_SESSION['user_id']]);
         $product = $getStmt->fetch();
         
         if (!$product) {
             http_response_code(404);
-            echo json_encode(['error' => 'Produto não encontrado']);
+            echo json_encode(['error' => 'Produto não encontrado ou não pertence ao usuário atual']);
             exit;
         }
         
-        $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, quantity = ?, status = ? WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE products SET name = ?, description = ?, price = ?, quantity = ?, status = ? WHERE id = ? AND user_id = ?");
         $stmt->execute([
             $data['name'],
             isset($data['description']) ? $data['description'] : $product['description'],
             isset($data['price']) ? $data['price'] : $product['price'],
             isset($data['quantity']) ? $data['quantity'] : $product['quantity'],
             isset($data['status']) ? $data['status'] : $product['status'],
-            $data['id']
+            $data['id'],
+            $_SESSION['user_id'] // Garantir que apenas o proprietário pode atualizar
         ]);
         
         // Get the updated product
-        $getStmt->execute([$data['id']]);
+        $getStmt->execute([$data['id'], $_SESSION['user_id']]);
         $updatedProduct = $getStmt->fetch();
         
         echo json_encode(['success' => true, 'product' => $updatedProduct]);
@@ -165,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     }
 }
 
-// Delete product
+// Modificar a exclusão de produtos para verificar propriedade
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     try {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -176,14 +178,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             exit;
         }
         
-        // Get product data to check business rules
-        $getStmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-        $getStmt->execute([$data['id']]);
+        // Get product data to check business rules and ownership
+        $getStmt = $pdo->prepare("SELECT * FROM products WHERE id = ? AND user_id = ?");
+        $getStmt->execute([$data['id'], $_SESSION['user_id']]);
         $product = $getStmt->fetch();
         
         if (!$product) {
             http_response_code(404);
-            echo json_encode(['error' => 'Produto não encontrado']);
+            echo json_encode(['error' => 'Produto não encontrado ou não pertence ao usuário atual']);
             exit;
         }
         
@@ -194,8 +196,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             exit;
         }
         
-        $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
-        $stmt->execute([$data['id']]);
+        $stmt = $pdo->prepare("DELETE FROM products WHERE id = ? AND user_id = ?");
+        $stmt->execute([$data['id'], $_SESSION['user_id']]);
         
         echo json_encode(['success' => true]);
     } catch (PDOException $e) {
